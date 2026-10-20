@@ -1,11 +1,18 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import api from '../services/api';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
+import api from "../services/api";
 
 const ConfigContext = createContext(null);
 
 export function ConfigProvider({ children }) {
   const [config, setConfig] = useState({
-    dollarRate: null,      // null = aún no disponible / error de cotización
+    dollarRate: null, // null = aún no disponible / error de cotización
     profitMargin: 30,
     lastDollarUpdate: null,
   });
@@ -25,7 +32,7 @@ export function ConfigProvider({ children }) {
     setLoading(true);
     setDollarError(null);
     try {
-      const response = await api.get('/public/config');
+      const response = await api.get("/public/config");
       const { dollarRate, profitMargin } = response.data;
 
       setConfig({
@@ -34,18 +41,26 @@ export function ConfigProvider({ children }) {
         lastDollarUpdate: new Date().toISOString(),
       });
 
-      console.log(`[Config] dollarRate=$${dollarRate} profitMargin=${profitMargin}%`);
+      console.log(
+        `[Config] dollarRate=$${dollarRate} profitMargin=${profitMargin}%`,
+      );
     } catch (err) {
       // Si el backend devuelve 503 es porque la API del dólar no responde
       if (err.response?.status === 503) {
-        const msg = err.response.data?.error
-          ?? 'No se pudo obtener la cotización del dólar. Los precios en ARS no pueden calcularse.';
+        const msg =
+          err.response.data?.error ??
+          "No se pudo obtener la cotización del dólar. Los precios en ARS no pueden calcularse.";
         setDollarError(msg);
-        setConfig(prev => ({ ...prev, dollarRate: null }));
-        console.warn('[Config] Dollar API no disponible:', msg);
+        setConfig((prev) => ({ ...prev, dollarRate: null }));
+        console.warn("[Config] Dollar API no disponible:", msg);
       } else {
         setError(err);
-        console.error('[Config] Error al cargar configuración:', err.message);
+        // FIX: Si falla internet, limpiamos la cotización para evitar precios erroneos
+        setDollarError(
+          "Error de conexión. No se puede calcular precios en ARS.",
+        );
+        setConfig((prev) => ({ ...prev, dollarRate: null }));
+        console.error("[Config] Error al cargar configuración:", err.message);
       }
     } finally {
       setLoading(false);
@@ -53,12 +68,14 @@ export function ConfigProvider({ children }) {
   }, []);
 
   // Carga inicial
-  useEffect(() => { fetchConfig(); }, [fetchConfig]);
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
 
   // Auto-refresh cada 1 hora
   useEffect(() => {
     intervalRef.current = setInterval(() => {
-      console.log('[Config] Actualizando configuración automáticamente...');
+      console.log("[Config] Actualizando configuración automáticamente...");
       fetchConfig();
     }, 3_600_000);
     return () => clearInterval(intervalRef.current);
@@ -66,11 +83,11 @@ export function ConfigProvider({ children }) {
 
   const updateConfig = async (newConfig) => {
     try {
-      await api.post('/admin/config', newConfig);
-      setConfig(prev => ({ ...prev, ...newConfig }));
+      await api.post("/admin/config", newConfig);
+      setConfig((prev) => ({ ...prev, ...newConfig }));
       return true;
     } catch (err) {
-      console.error('[Config] Error al actualizar configuración:', err);
+      console.error("[Config] Error al actualizar configuración:", err);
       return false;
     }
   };
@@ -79,15 +96,17 @@ export function ConfigProvider({ children }) {
   const refreshDollarRate = () => fetchConfig();
 
   return (
-    <ConfigContext.Provider value={{
-      config,
-      loading,
-      error,
-      dollarError,
-      updateConfig,
-      refresh: fetchConfig,
-      refreshDollarRate,
-    }}>
+    <ConfigContext.Provider
+      value={{
+        config,
+        loading,
+        error,
+        dollarError,
+        updateConfig,
+        refresh: fetchConfig,
+        refreshDollarRate,
+      }}
+    >
       {children}
     </ConfigContext.Provider>
   );
@@ -95,6 +114,7 @@ export function ConfigProvider({ children }) {
 
 export function useConfig() {
   const context = useContext(ConfigContext);
-  if (!context) throw new Error('useConfig must be used within a ConfigProvider');
+  if (!context)
+    throw new Error("useConfig must be used within a ConfigProvider");
   return context;
 }

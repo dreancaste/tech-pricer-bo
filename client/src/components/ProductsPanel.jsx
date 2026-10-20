@@ -160,7 +160,8 @@ export default function ProductsPanel() {
                                                     ${p.priceUsd?.toFixed(2)}
                                                 </td>
                                                 <td className="px-4 py-2.5 text-right font-mono font-semibold text-green-700">
-                                                    ${(p.finalPriceArs ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0 })}
+                                                    {/* FIX: Evitar que muestre $0 si no hay cotización */}
+                                                   ${p.finalPriceArs.toLocaleString('es-AR', { minimumFractionDigits: 0 })}
                                                 </td>
                                                 <td className="px-4 py-2.5 text-slate-500">{p.category}</td>
                                             </tr>

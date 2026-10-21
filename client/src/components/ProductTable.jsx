@@ -356,7 +356,7 @@ export default function ProductTable({
                   const costArs = dollarRate
                     ? product.priceUsd * dollarRate
                     : null;
-                    /* FIX: Evita el precio 0 con el fallback */
+                  /* FIX: Evita el precio 0 con el fallback */
                   const finalPrice = product.finalPriceArs ?? costArs ?? null;
                   // Markup aplicado: derivado de finalPriceArs y costArs
                   const appliedMarkup =
@@ -422,11 +422,14 @@ export default function ProductTable({
 
                       <td className="p-4 text-right font-bold text-slate-900 font-mono text-lg">
                         <span className={isLoggedIn ? "text-green-600" : ""}>
-                          $
-                          {finalPrice.toLocaleString("es-AR", {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 0,
-                          })}
+                          {/* FIX: Mostrar mensaje si no hay precio en vez de $0 */}
+                          {finalPrice !== null ? (
+                            `$${finalPrice.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                          ) : (
+                            <span className="text-red-500 text-sm font-normal">
+                              Sin cotización
+                            </span>
+                          )}
                         </span>
                       </td>
 
